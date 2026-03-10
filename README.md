@@ -52,6 +52,7 @@ Working but must be paired -
 - Model-aware DST/world-city prepare sequence (GA vs GW profile)
 - Old-watch reactive protocol: responds to time/feature requests from the watch
 - `--debug` flag writes a timestamped session log to disk
+- Alerts! 🚨🚨 Send alerts to GB-5600x watches
 - Rainbow ASCII-art splash on startup (if `ascii-art.txt` is present)
 
 ---
