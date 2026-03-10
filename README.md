@@ -15,6 +15,17 @@ Supports both G-Shock generations:
 
 ---
 
+## Tested watches
+
+I've personally tested this with the following models:
+
+- **GA-B2100** — works perfectly
+- **GW-B5600** — works perfectly
+- **GB-5600AB** — works, but requires the watch to be paired first (enter the PIN shown on the watch screen when prompted)
+- **GB-5600AA** — works, but requires the watch to be paired first (enter the PIN shown on the watch screen when prompted)
+
+---
+
 ## Features
 
 - Full-screen Textual TUI with colour-coded raw and decoded log panes
