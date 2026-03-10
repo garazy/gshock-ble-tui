@@ -58,13 +58,14 @@ class StatusPanel(Static):
 
     def __init__(self, **kwargs):
         super().__init__("", **kwargs)
-        self._status_text = "Idle"
-        self._connected   = False
-        self._device_name = "—"
-        self._device_addr = "—"
-        self._last_tx     = "—"
-        self._event_count = 0
-        self._watch_gen   = "?"
+        self._status_text  = "Idle"
+        self._connected    = False
+        self._device_name  = "—"
+        self._device_addr  = "—"
+        self._last_tx      = "—"
+        self._event_count  = 0
+        self._watch_gen    = "?"
+        self._queue_depth  = 0
 
     def set_status(self, text: str):
         self._status_text = text
@@ -76,6 +77,10 @@ class StatusPanel(Static):
         self._device_name = name
         self._device_addr = addr
         self._watch_gen   = gen
+        self._refresh()
+
+    def set_queue_depth(self, depth: int):
+        self._queue_depth = depth
         self._refresh()
 
     def inc_events(self):
@@ -101,6 +106,11 @@ class StatusPanel(Static):
         gen_str = f"[{gc}]{self._watch_gen}[/{gc}]"
         ts = datetime.datetime.now().strftime("%H:%M:%S")
 
+        queue_str = (
+            f"[bold yellow]{self._queue_depth} pending[/bold yellow]"
+            if self._queue_depth > 0
+            else "[dim]empty[/dim]"
+        )
         content = (
             f" [bold]G-Shock BLE Debug[/bold]            {ts}\n"
             f" Connection : {conn_str}  gen={gen_str}\n"
@@ -108,6 +118,7 @@ class StatusPanel(Static):
             f" Status     : {me(self._status_text)}\n"
             f" Events     : [yellow]{self._event_count}[/yellow]\n"
             f" Last TX    : {me(self._last_tx)}\n"
+            f" Alert Queue: {queue_str}\n"
             f"\n"
             f" [bold]Scan[/bold]: all devices (no UUID filter)\n"
             f" [bold]NEW[/bold]: adv=0x1804  svc={NEW_SERVICE_UUID[:8]}…\n"

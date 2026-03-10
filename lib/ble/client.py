@@ -84,6 +84,8 @@ class GShockBLE:
         self._old_time_lock:   asyncio.Lock  = asyncio.Lock()
         # feature_code → Future[bytes]: used by _request_and_echo to pair responses
         self._response_futures: dict = {}
+        # Pending alerts to deliver when the next watch connects
+        self._alert_queue: list = []   # list of (category: int, count: int, text: str)
 
     # ------------------------------------------------------------------
     # Public properties
@@ -104,6 +106,10 @@ class GShockBLE:
     @property
     def watch_gen(self) -> str:
         return self._watch_gen
+
+    @property
+    def alert_queue_depth(self) -> int:
+        return len(self._alert_queue)
 
     # ------------------------------------------------------------------
     # Public control
@@ -184,6 +190,36 @@ class GShockBLE:
                 f"{type(exc).__name__}: {exc}"
             )
             return False
+
+    def queue_alert(self, category: int, count: int, text: str) -> None:
+        """Add an alert to the queue; it will be delivered when the next watch connects."""
+        self._alert_queue.append((category, count, text))
+        self._status(
+            f"Alert queued (depth={len(self._alert_queue)}): "
+            f"cat={category} '{text}' — will send on next connection."
+        )
+
+    async def _flush_alert_queue(self) -> None:
+        """Drain the alert queue to the connected watch (OLD protocol only)."""
+        if not self._alert_queue:
+            return
+        if not self._connected or not self._client:
+            return
+        if self._watch_gen != "OLD":
+            self._status(
+                f"Alert queue has {len(self._alert_queue)} item(s) but alerts are only "
+                "supported on OLD watches (GB-series) — clearing queue."
+            )
+            self._alert_queue.clear()
+            return
+        self._status(f"Flushing {len(self._alert_queue)} queued alert(s) to watch…")
+        while self._alert_queue:
+            cat, cnt, text = self._alert_queue.pop(0)
+            ok = await self.send_alert(cat, cnt, text)
+            self._status(
+                f"Queued alert {'sent' if ok else 'FAILED'}: cat={cat} '{text}'"
+            )
+            await asyncio.sleep(0.3)
 
     async def send_alert(self, category: int, count: int, text: str) -> bool:
         """Push a notification alert to an OLD watch via New Alert (00002a46)."""
@@ -502,6 +538,12 @@ class GShockBLE:
         await self._prepare_time_set(client)
         await self._send_time_new()
         self._handshake_event.set()
+        if self._alert_queue:
+            self._status(
+                f"Note: {len(self._alert_queue)} queued alert(s) — "
+                "NEW watches do not support alert push; clearing queue."
+            )
+            self._alert_queue.clear()
 
     def _watch_model_config(self) -> tuple:
         """Return (dstCount, worldCitiesCount) for the connected watch.
@@ -738,6 +780,9 @@ class GShockBLE:
             return
         if svc_id == 0x00 and req == 0x01:
             self._status("OLD watch: init handshake complete.")
+            asyncio.get_event_loop().call_soon(
+                lambda: asyncio.ensure_future(self._flush_alert_queue())
+            )
         elif svc_id == 0x02 and req == 0x01:
             self._status("OLD watch: time request → writing current time…")
             asyncio.get_event_loop().call_soon(

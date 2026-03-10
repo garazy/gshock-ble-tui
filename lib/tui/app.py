@@ -10,6 +10,8 @@ Keyboard shortcuts:
     q   Quit
     s   Start scan / rescan
     t   Send time-sync command
+    a   Send alert now (connected OLD watch only)
+    y   Queue alert (delivered on next watch connection)
     c   Clear both logs
     i   Probe watch info (name, version, battery)
     d   Dump all features to decoded log
@@ -121,6 +123,7 @@ class GShockApp(App):
         Binding("s", "scan",          "Scan/Rescan"),
         Binding("t", "send_time",     "Sync Time"),
         Binding("a", "send_alert",    "Send Alert"),
+        Binding("y", "queue_alert",   "Queue Alert"),
         Binding("c", "clear_logs",    "Clear Logs"),
         Binding("i", "probe_info",    "Watch Info"),
         Binding("d", "dump_features", "Dump Features"),
@@ -391,6 +394,7 @@ class GShockApp(App):
                 self._ble.device_addr,
                 self._ble.watch_gen,
             )
+            panel.set_queue_depth(self._ble.alert_queue_depth)
 
     # ------------------------------------------------------------------
     # Key actions
@@ -430,6 +434,27 @@ class GShockApp(App):
         category, text = result
         ok = await self._ble.send_alert(category, count=1, text=text)
         self._append_status("Alert sent." if ok else "Alert send failed.")
+
+    @work
+    async def action_queue_alert(self) -> None:
+        result = await self.push_screen_wait(AlertModal())
+        if result is None:
+            return
+        category, text = result
+        if not text.strip():
+            self._append_status("Queue alert cancelled — empty message.")
+            return
+        if self._ble:
+            self._ble.queue_alert(category, count=1, text=text)
+            depth = self._ble.alert_queue_depth
+            self._append_status(
+                f"Alert queued (depth={depth}). "
+                "Will be sent when an OLD watch next connects."
+            )
+            panel = self.query_one("#status-panel", StatusPanel)
+            panel.set_queue_depth(depth)
+        else:
+            self._append_status("BLE not running — cannot queue alert.")
 
     async def action_clear_logs(self) -> None:
         self.query_one("#raw-log",     RichLog).clear()
