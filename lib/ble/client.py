@@ -407,12 +407,14 @@ class GShockBLE:
 
     def _detect_generation(self, client: BleakClient) -> str:
         svc_uuids = {str(s.uuid).lower() for s in client.services}
-        if NEW_SERVICE_UUID.lower() in svc_uuids:
-            return "NEW"
+        # Check for OLD protocol first - some watches (GB-5600B) have both
+        # OLD and NEW services but are fundamentally OLD protocol watches
         if OLD_SVC_VIRTUAL_SERVER.lower() in svc_uuids:
             return "OLD"
         if any(u.startswith(CASIO_UUID_PREFIX) for u in svc_uuids):
             return "OLD"
+        if NEW_SERVICE_UUID.lower() in svc_uuids:
+            return "NEW"
         return "UNKNOWN"
 
     # ------------------------------------------------------------------
