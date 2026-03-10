@@ -1,5 +1,7 @@
 # G-Shock BLE Debug TUI
 
+![G-Shock BLE TUI screenshot](https://github.com/user-attachments/assets/7cf3181d-c68c-4532-9f9f-b38e2aa5d89c)
+
 A terminal-based debug tool for Casio G-Shock Bluetooth LE watches.
 Connects to a watch as a GATT central (PC-side client), logs all raw BLE
 traffic, decodes protocol commands, and syncs the watch time from NTP.
