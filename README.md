@@ -32,10 +32,14 @@ Supports both G-Shock generations:
 
 I've personally tested this with the following models:
 
-- **GA-B2100** — works perfectly
-- **GW-B5600** — works perfectly
-- **GB-5600AB** — works, but requires the watch to be paired first (enter the PIN shown on the watch screen when prompted)
-- **GB-5600AA** — works, but requires the watch to be paired first (enter the PIN shown on the watch screen when prompted)
+Just works -
+- **GA-B2100**
+- **GW-B5600**
+
+Working but must be paired -
+- **GB-5600AB**
+- **GB-5600AA**
+- **GB-5600B**  
 
 ---
 
