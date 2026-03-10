@@ -416,6 +416,7 @@ class GShockApp(App):
             msg = "Not connected – cannot send time."
         self._append_status(msg)
 
+    @work
     async def action_send_alert(self) -> None:
         if not self._ble or not self._ble.connected:
             self._append_status("Not connected.")

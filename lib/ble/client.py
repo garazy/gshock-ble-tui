@@ -201,7 +201,7 @@ class GShockBLE:
         data = encode_new_alert(category, count, text)
         self._emit_tx(data, OLD_CHAR_NEW_ALERT, f"NEW_ALERT cat={category}")
         try:
-            await client.write_gatt_char(char.handle, data, response=False)
+            await client.write_gatt_char(char.handle, data, response=True)
             return True
         except Exception as exc:
             self._status(f"NEW_ALERT write failed: {type(exc).__name__}: {exc}")
