@@ -10,11 +10,15 @@ import datetime
 import logging
 
 from rich.markup import escape as me
-from textual.widgets import Static
+from textual.app import ComposeResult
+from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
+from textual.widgets import Button, Input, Label, Select, Static
 
 from lib.protocol.constants import (
     NEW_SERVICE_UUID, OLD_SVC_VIRTUAL_SERVER,
     CHAR_READ_REQUEST, CHAR_ALL_FEATURES,
+    ALERT_CATEGORIES,
 )
 
 
@@ -112,3 +116,60 @@ class StatusPanel(Static):
             f"time→{CHAR_ALL_FEATURES[:8]}…[/dim]"
         )
         self.update(content)
+
+
+# ---------------------------------------------------------------------------
+# Alert push modal  (OLD watches only)
+# ---------------------------------------------------------------------------
+
+class AlertModal(ModalScreen):
+    """Modal dialog for composing and sending a New Alert to an OLD watch."""
+
+    DEFAULT_CSS = """
+    AlertModal {
+        align: center middle;
+    }
+    #modal-panel {
+        width: 46;
+        height: auto;
+        border: round $accent;
+        background: $surface;
+        padding: 1 2;
+    }
+    #modal-title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #modal-buttons {
+        height: 3;
+        margin-top: 1;
+        align-horizontal: right;
+    }
+    #btn-send {
+        margin-left: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        options = [(name, cat_id) for cat_id, name in sorted(ALERT_CATEGORIES.items())]
+        with Vertical(id="modal-panel"):
+            yield Label("Push Alert to Watch", id="modal-title")
+            yield Label("Category:")
+            yield Select(options, id="cat-select")
+            yield Label("Message (≤ 18 chars):")
+            yield Input(placeholder="Enter message…", max_length=18, id="msg-input")
+            with Horizontal(id="modal-buttons"):
+                yield Button("Cancel", id="btn-cancel", variant="default")
+                yield Button("Send", id="btn-send", variant="primary")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-cancel":
+            self.dismiss(None)
+            return
+        cat_select = self.query_one("#cat-select", Select)
+        msg_input  = self.query_one("#msg-input", Input)
+        cat_val    = cat_select.value
+        if cat_val is Select.BLANK:
+            self.notify("Please select a category.")
+            return
+        self.dismiss((cat_val, msg_input.value))

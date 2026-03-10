@@ -33,15 +33,16 @@ from lib.protocol import (
     CHAR_READ_REQUEST, CHAR_ALL_FEATURES,
     NEW_NOTIFY_CHAR_UUIDS,
     # old watch
-    OLD_SVC_VIRTUAL_SERVER, OLD_SVC_IMMEDIATE_ALERT,
+    OLD_SVC_VIRTUAL_SERVER, OLD_SVC_IMMEDIATE_ALERT, OLD_SVC_ALERT_NOTIF,
     OLD_CHAR_VS_FEATURE, OLD_CHAR_A_NOT_W_REQ, OLD_CHAR_A_NOT_COM_SET,
+    OLD_CHAR_NEW_ALERT, OLD_CHAR_ALERT_NOTIF_CP,
     STD_CHAR_CURRENT_TIME, STD_CHAR_LOCAL_TIME, STD_CHAR_ALERT_LEVEL,
     OLD_NOTIFY_CHAR_UUIDS,
     # shared
     ALL_CASIO_ADV_UUIDS, CASIO_UUID_PREFIX, UUID_LABELS,
     # encoders / events
-    build_time_command_new, encode_time_old, encode_local_time, get_ntp_time,
-    decode_event, make_sys_event, make_scan_event,
+    build_time_command_new, encode_time_old, encode_local_time, encode_new_alert,
+    get_ntp_time, decode_event, make_sys_event, make_scan_event,
     BLEEvent,
 )
 
@@ -182,6 +183,28 @@ class GShockBLE:
                 f"request_feature 0x{feature_code:02X} failed: "
                 f"{type(exc).__name__}: {exc}"
             )
+            return False
+
+    async def send_alert(self, category: int, count: int, text: str) -> bool:
+        """Push a notification alert to an OLD watch via New Alert (00002a46)."""
+        client = self._client
+        if not client or self._watch_gen != "OLD":
+            return False
+        svc = client.services.get_service(OLD_SVC_ALERT_NOTIF)
+        if svc is None:
+            self._status("Alert Notification Service (26eb0000) not found on this watch.")
+            return False
+        char = svc.get_characteristic(OLD_CHAR_NEW_ALERT)
+        if char is None:
+            self._status("NEW_ALERT characteristic (00002a46) not found in alert service.")
+            return False
+        data = encode_new_alert(category, count, text)
+        self._emit_tx(data, OLD_CHAR_NEW_ALERT, f"NEW_ALERT cat={category}")
+        try:
+            await client.write_gatt_char(char.handle, data, response=False)
+            return True
+        except Exception as exc:
+            self._status(f"NEW_ALERT write failed: {type(exc).__name__}: {exc}")
             return False
 
     async def send_raw(self, char_uuid: str, data: bytes,

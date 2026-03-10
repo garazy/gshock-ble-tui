@@ -63,6 +63,20 @@ STD_CCC_DESCRIPTOR    = "00002902-0000-1000-8000-00805f9b34fb"
 
 OLD_NOTIFY_CHAR_UUIDS = [OLD_CHAR_A_NOT_W_REQ, OLD_CHAR_A_NOT_COM_SET]
 
+# Alert Notification Service characteristics (OLD watches)
+OLD_CHAR_NEW_ALERT       = "00002a46-0000-1000-8000-00805f9b34fb"
+OLD_CHAR_ALERT_NOTIF_CP  = "00002a44-0000-1000-8000-00805f9b34fb"
+OLD_CHAR_MORE_ALERT      = "26eb001b-b012-49a8-b1f8-394fb2032b0f"
+OLD_CHAR_MORE_ALERT_LONG = "26eb001c-b012-49a8-b1f8-394fb2032b0f"
+
+ALERT_CATEGORIES = {
+    1:  "Email",
+    3:  "Incoming Call",
+    5:  "SMS/MMS",
+    7:  "Schedule",
+    13: "SNS",
+}
+
 # ---------------------------------------------------------------------------
 # Scan helpers
 # ---------------------------------------------------------------------------
@@ -99,6 +113,10 @@ UUID_LABELS: Dict[str, str] = {
     OLD_CHAR_A_NOT_COM_SET:    "OLD:InitDone(26eb000a)",
     OLD_CHAR_KEY_CONTAINER:    "OLD:KeyContainer(26eb0019)",
     OLD_CHAR_NAME_OF_APP:      "OLD:NameOfApp(26eb001d)",
+    OLD_CHAR_NEW_ALERT:        "OLD:NewAlert(00002a46)",
+    OLD_CHAR_ALERT_NOTIF_CP:   "OLD:AlertNotifCP(00002a44)",
+    OLD_CHAR_MORE_ALERT:       "OLD:MoreAlert(26eb001b)",
+    OLD_CHAR_MORE_ALERT_LONG:  "OLD:MoreAlertLong(26eb001c)",
     STD_CHAR_CURRENT_TIME:     "STD:CurrentTime(00002a2b)",
     STD_CHAR_LOCAL_TIME:       "STD:LocalTime(00002a0f)",
     STD_CHAR_ALERT_LEVEL:      "STD:AlertLevel(00002a06)",

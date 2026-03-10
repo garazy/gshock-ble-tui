@@ -16,6 +16,9 @@ from lib.protocol.constants import (
     OLD_SVC_KEY_COMMANDER, OLD_SVC_MORE_ALERT,
     OLD_CHAR_VS_FEATURE, OLD_CHAR_A_NOT_W_REQ, OLD_CHAR_A_NOT_COM_SET,
     OLD_CHAR_SETTING_BLE, OLD_CHAR_KEY_CONTAINER, OLD_CHAR_NAME_OF_APP,
+    OLD_CHAR_NEW_ALERT, OLD_CHAR_ALERT_NOTIF_CP,
+    OLD_CHAR_MORE_ALERT, OLD_CHAR_MORE_ALERT_LONG,
+    ALERT_CATEGORIES,
     STD_CHAR_CURRENT_TIME, STD_CHAR_LOCAL_TIME, STD_CHAR_ALERT_LEVEL,
     STD_CHAR_TX_POWER, STD_CHAR_FIRMWARE_REV, STD_CCC_DESCRIPTOR,
     OLD_NOTIFY_CHAR_UUIDS,
@@ -35,6 +38,7 @@ from lib.protocol.encoders import (
     encode_time_old,
     encode_local_time,
     build_time_command_new,
+    encode_new_alert,
 )
 from lib.protocol.decoders import decode_event
 
@@ -50,6 +54,9 @@ __all__ = [
     "OLD_SVC_KEY_COMMANDER", "OLD_SVC_MORE_ALERT",
     "OLD_CHAR_VS_FEATURE", "OLD_CHAR_A_NOT_W_REQ", "OLD_CHAR_A_NOT_COM_SET",
     "OLD_CHAR_SETTING_BLE", "OLD_CHAR_KEY_CONTAINER", "OLD_CHAR_NAME_OF_APP",
+    "OLD_CHAR_NEW_ALERT", "OLD_CHAR_ALERT_NOTIF_CP",
+    "OLD_CHAR_MORE_ALERT", "OLD_CHAR_MORE_ALERT_LONG",
+    "ALERT_CATEGORIES",
     "STD_CHAR_CURRENT_TIME", "STD_CHAR_LOCAL_TIME", "STD_CHAR_ALERT_LEVEL",
     "STD_CHAR_TX_POWER", "STD_CHAR_FIRMWARE_REV", "STD_CCC_DESCRIPTOR",
     "OLD_NOTIFY_CHAR_UUIDS",
@@ -60,7 +67,7 @@ __all__ = [
     "BLEEvent", "label_for_uuid", "make_sys_event", "make_scan_event",
     # encoders
     "get_ntp_time", "encode_time_new", "encode_time_old",
-    "encode_local_time", "build_time_command_new",
+    "encode_local_time", "build_time_command_new", "encode_new_alert",
     # decoders
     "decode_event",
 ]

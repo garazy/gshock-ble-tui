@@ -41,7 +41,7 @@ from lib.protocol import (
     build_time_command_new, decode_event,
 )
 from lib.ble.client import GShockBLE
-from lib.tui.widgets import TUILogHandler, StatusPanel
+from lib.tui.widgets import TUILogHandler, StatusPanel, AlertModal
 from version import VERSION
 
 
@@ -120,6 +120,7 @@ class GShockApp(App):
         Binding("q", "quit",          "Quit"),
         Binding("s", "scan",          "Scan/Rescan"),
         Binding("t", "send_time",     "Sync Time"),
+        Binding("a", "send_alert",    "Send Alert"),
         Binding("c", "clear_logs",    "Clear Logs"),
         Binding("i", "probe_info",    "Watch Info"),
         Binding("d", "dump_features", "Dump Features"),
@@ -414,6 +415,20 @@ class GShockApp(App):
         else:
             msg = "Not connected – cannot send time."
         self._append_status(msg)
+
+    async def action_send_alert(self) -> None:
+        if not self._ble or not self._ble.connected:
+            self._append_status("Not connected.")
+            return
+        if self._ble.watch_gen != "OLD":
+            self._append_status("Alert push only supported on OLD watches (GB-series).")
+            return
+        result = await self.push_screen_wait(AlertModal())
+        if result is None:
+            return
+        category, text = result
+        ok = await self._ble.send_alert(category, count=1, text=text)
+        self._append_status("Alert sent." if ok else "Alert send failed.")
 
     async def action_clear_logs(self) -> None:
         self.query_one("#raw-log",     RichLog).clear()

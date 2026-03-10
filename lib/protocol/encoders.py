@@ -117,3 +117,13 @@ def encode_local_time() -> bytes:
     tz_15   = std_min // 15
 
     return bytes([tz_15 & 0xFF, dst_15 & 0xFF])
+
+
+def encode_new_alert(category: int, count: int, text: str) -> bytes:
+    """
+    Encode a New Alert payload for OLD watches (00002a46, no-response write).
+
+    Layout: [categoryId, count, text_bytes…]  — text truncated to 18 UTF-8 bytes.
+    """
+    text_bytes = text.encode("utf-8", errors="replace")[:18]
+    return bytes([category, count]) + text_bytes
