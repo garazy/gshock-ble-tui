@@ -200,7 +200,14 @@ class GShockBLE:
         )
 
     async def _flush_alert_queue(self) -> None:
-        """Drain the alert queue to the connected watch (OLD protocol only)."""
+        """Drain the alert queue to the connected watch (OLD protocol only).
+
+        We wait briefly after the init handshake so that the watch's time-sync
+        writes (which come in as subsequent notifications) can complete first.
+        Sending the alert while GATT writes for time-sync are in flight causes
+        the watch to silently discard it even though the write returns success.
+        """
+        await asyncio.sleep(2.0)   # let time-sync notifications complete
         if not self._alert_queue:
             return
         if not self._connected or not self._client:
