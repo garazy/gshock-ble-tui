@@ -81,9 +81,7 @@ class GShockBLE:
         self._found_adv:       Optional[AdvertisementData] = None
         self._handshake_event: asyncio.Event = asyncio.Event()
         # Serialises concurrent old-watch time writes (reactive vs. manual)
-        self._old_time_lock:       asyncio.Lock  = asyncio.Lock()
-        # Fired when the reactive current-time write completes (old protocol)
-        self._old_time_sync_event: asyncio.Event = asyncio.Event()
+        self._old_time_lock:   asyncio.Lock  = asyncio.Lock()
         # feature_code → Future[bytes]: used by _request_and_echo to pair responses
         self._response_futures: dict = {}
         # Pending alerts to deliver when the next watch connects
@@ -204,16 +202,13 @@ class GShockBLE:
     async def _flush_alert_queue(self) -> None:
         """Drain the alert queue to the connected watch (OLD protocol only).
 
-        Wait for the reactive current-time write to complete (signalled by
-        _old_time_sync_event) before sending so that the alert doesn't race
-        with time-sync GATT writes.  Falls back to a 5 s timeout in case the
-        watch never issues a time request (already synchronised).
+        Acquiring _old_time_lock ensures all reactive time-sync writes
+        (VS feature, local time, current time) have completed before we send
+        the alert — the watch silently discards alerts while time writes are
+        in flight.
         """
-        try:
-            await asyncio.wait_for(self._old_time_sync_event.wait(), timeout=5.0)
-        except asyncio.TimeoutError:
-            self._status("Alert queue: time-sync event timed out — sending anyway…")
-        await asyncio.sleep(0.1)   # let the final ACK settle
+        async with self._old_time_lock:
+            pass   # wait for any in-flight time writes to finish
         if not self._alert_queue:
             return
         if not self._connected or not self._client:
@@ -226,6 +221,7 @@ class GShockBLE:
             self._alert_queue.clear()
             return
         self._status(f"Flushing {len(self._alert_queue)} queued alert(s) to watch…")
+        await asyncio.sleep(2.0)   # let watch fully settle after init handshake
         while self._alert_queue:
             cat, cnt, text = self._alert_queue.pop(0)
             ok = await self.send_alert(cat, cnt, text)
@@ -701,7 +697,6 @@ class GShockBLE:
         All reactive writes use WRITE_TYPE_DEFAULT (with-response), serialised FIFO.
         """
         self._status("OLD watch protocol (GB-5600/GB-6900): initialising…")
-        self._old_time_sync_event.clear()
 
         for uuid in OLD_NOTIFY_CHAR_UUIDS:
             await self._try_subscribe(client, uuid)
@@ -800,7 +795,7 @@ class GShockBLE:
         elif svc_id == 0x02 and req == 0x01:
             self._status("OLD watch: time request → writing current time…")
             asyncio.get_event_loop().call_soon(
-                lambda: asyncio.ensure_future(self._reply_current_time())
+                lambda: asyncio.ensure_future(self._reply_current_time_then_alerts())
             )
         elif svc_id == 0x02 and req == 0x02:
             self._status("OLD watch: local-time request → writing local time…")
@@ -813,6 +808,10 @@ class GShockBLE:
                 lambda: asyncio.ensure_future(self._reply_vs_feature())
             )
 
+    async def _reply_current_time_then_alerts(self) -> None:
+        """Write current time (watch-requested)."""
+        await self._reply_current_time()
+
     async def _reply_current_time(self) -> None:
         client = self._client
         if not client:
@@ -823,7 +822,6 @@ class GShockBLE:
             self._emit_tx(data, STD_CHAR_CURRENT_TIME, "OLD time reply")
             await self._try_write(client, STD_CHAR_CURRENT_TIME, data,
                                    prefer_response=True, label="time reply (old)")
-        self._old_time_sync_event.set()
 
     async def _reply_local_time(self) -> None:
         client = self._client
